@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+{% block title %}Profile{% endblock %}
+{% block content %}
+<div class="bg-white p-6 rounded shadow max-w-3xl mx-auto">
+    <h2 class="text-lg font-bold mb-4">Student Profile</h2>
+    <form method="post" enctype="multipart/form-data">
+        {{ form.hidden_tag() }}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Name (required) -->
+            <div>
+                <div class="text-red-600 font-bold">* Required</div>
+                <label class="block text-sm font-medium mt-1">Name</label>
+                {{ form.name(class_='w-full p-2 border rounded', placeholder='Full name') }}
+            </div>
+
+            <!-- Father's Name -->
+            <div>
+                <div class="text-red-600 font-bold">* Required</div>    
+                <label class="block text-sm font-medium mt-1">Father's Name</label>
+                {{ form.father_name(class_='w-full p-2 border rounded', placeholder="Father's full name") }}
+            </div>
+
+            <!-- Mother's Name -->
+            <div>
+                <label class="block text-sm font-medium">Mother's Name</label>
+                {{ form.mother_name(class_='w-full p-2 border rounded', placeholder="Mother's full name (optional)") }}
+            </div>
+
+            <!-- DOB (date picker) -->
+            <div>
+                <label class="block text-sm font-medium">DOB <span class="text-xs text-gray-500">(YYYY-MM-DD)</span></label>
+                <!-- Use HTML date input for calendar -->
+                <input type="date" name="{{ form.dob.name }}" id="{{ form.dob.id }}" value="{{ form.dob.data or '' }}" class="w-full p-2 border rounded" required>
+            </div>
+
+            <!-- DOB Certificate -->
+            <div>
+                <label class="block text-sm font-medium">DOB Certificate No.</label>
+                {{ form.dob_cert_no(class_='w-full p-2 border rounded', placeholder='Certificate number (if any)') }}
+            </div>
+
+            <!-- Gender (required) -->
+            <div>
+                <label class="block text-sm font-medium">Gender</label>
+                {{ form.gender(class_='w-full p-2 border rounded') }}
+            </div>
+
+            <!-- Address -->
+            <div class="md:col-span-2">
+                <label class="block text-sm font-medium">Address</label>
+                {{ form.address(class_='w-full p-2 border rounded', placeholder='Full postal address') }}
+            </div>
+
+            <!-- Mobile (required) -->
+            <div>
+                <label class="block text-sm font-medium">Mobile No.</label>
+                {{ form.mobile_no(class_='w-full p-2 border rounded', placeholder='Digits only, e.g. 9876543210', maxlength="15") }}
+            </div>
+
+            <!-- Parent Mobile -->
+            <div>
+                <label class="block text-sm font-medium">Parent's Mobile No.</label>
+                {{ form.parent_mobile_no(class_='w-full p-2 border rounded', placeholder='Digits only', maxlength="15") }}
+            </div>
+
+            <!-- Aadhar (required) -->
+            <div>
+                <label class="block text-sm font-medium">Aadhar Card No.</label>
+                <!-- placeholder shows format; pattern limits digits client-side; maxlength enforces length on input -->
+                {{ form.aadhar_no(class_='w-full p-2 border rounded', placeholder='12 digits - e.g. 1234-1234-1234', maxlength="12", pattern="\\d{12}", title="Enter exactly 12 digits") }}
+            </div>
+
+            <!-- RAA No. -->
+            <div>
+                <label class="block text-sm font-medium">RAA No.</label>
+                {{ form.raa_no(class_='w-full p-2 border rounded', placeholder='e.g. RAA12345 or 123-ABC', maxlength="10") }}
+            </div>
+
+            <!-- AAI No. -->
+            <div>
+                <label class="block text-sm font-medium">AAI No.</label>
+                {{ form.aai_no(class_='w-full p-2 border rounded', placeholder='e.g. AAI12345', maxlength="10") }}
+            </div>
+
+            <!-- Bow Type (required) -->
+            <div>
+                <label class="block text-sm font-medium">Bow Type</label>
+                {{ form.bow_type(class_='w-full p-2 border rounded') }}
+            </div>
+
+            <!-- Age Group (required) -->
+            <div>
+                <label class="block text-sm font-medium">Age Group</label>
+                {{ form.age_group(class_='w-full p-2 border rounded') }}
+            </div>
+
+            <!-- Photo -->
+            <div>
+                <label class="block text-sm font-medium">Photo (jpg / png)</label>
+                {{ form.photo(class_='w-full') }}
+                <p class="text-xs text-gray-500 mt-1">Max 2 MB. Allowed: png, jpg, jpeg.</p>
+            </div>
+
+        </div>
+        <div class="mt-4">{{ form.submit(class_='bg-green-600 text-white px-4 py-2 rounded') }}</div>
+    </form>
+    {% if profile and profile.roll_no %}
+        <div class="mt-4 p-3 bg-gray-50 rounded">Your roll no: <strong>{{ profile.roll_no }}</strong></div>
+    {% endif %}
+</div>
+{% endblock %}

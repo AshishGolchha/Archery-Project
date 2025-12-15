@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}Create User{% endblock %}
+{% block content %}
+<div class="max-w-md mx-auto bg-white p-6 rounded shadow">
+    <h2 class="text-xl font-bold mb-4">Create User</h2>
+    <form method="post">
+        {{ form.hidden_tag() }}
+        <div class="mb-3">
+            {{ form.email.label(class_='block text-sm') }}
+            {{ form.email(class_='w-full p-2 border rounded') }}
+        </div>
+        <div class="mb-3">
+            {{ form.username.label(class_='block text-sm') }}
+            {{ form.username(class_='w-full p-2 border rounded') }}
+        </div>
+        <div class="mb-3">
+            {{ form.password.label(class_='block text-sm') }}
+            {{ form.password(class_='w-full p-2 border rounded') }}
+            <p class="text-xs text-gray-500 mt-1">Optionally set a password here. If left blank, the system will generate one.</p>
+        </div>
+        <div class="mb-3">
+            <label class="inline-flex items-center">
+                {{ form.is_admin() }}
+                <span class="ml-2">Make Admin</span>
+            </label>
+        </div>
+        <div>
+            {{ form.submit(class_='bg-green-600 text-white px-4 py-2 rounded') }}
+        </div>
+    </form>
+</div>
+{% endblock %}

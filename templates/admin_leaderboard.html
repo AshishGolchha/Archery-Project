@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}Leaderboard — {{ comp.name }}{% endblock %}
+{% block content %}
+<div class="bg-white p-6 rounded shadow">
+  <h2 class="text-lg font-bold mb-4">Leaderboard — {{ comp.name }}</h2>
+  <table class="w-full text-left">
+    <thead>
+      <tr><th>Rank</th><th>Roll No</th><th>Total</th><th>X's</th></tr>
+    </thead>
+    <tbody>
+      {% for entry in entries %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ entry.roll_no }}</td>
+        <td>{{ entry.total }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}Student Dashboard{% endblock %}
+{% block content %}
+<div class="bg-white p-6 rounded shadow">
+    <h2 class="text-lg font-bold mb-4">Your Scores</h2>
+    <a href="{{ url_for('student_profile') }}" class="inline-block mb-3 bg-blue-500 text-white px-3 py-1 rounded">Edit Profile</a>
+    <table class="w-full text-left">
+        <thead>
+            <tr>
+                <th class="py-2">Competition</th>
+                <th class="py-2">Roll No</th>
+                <th class="py-2">Total</th>
+                <th class="py-2">View</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in entries %}
+            <tr class="border-t">
+                <td class="py-2">{{ s.competition.name if s.competition else 'Unknown' }}</td>
+                <td class="py-2">{{ s.roll_no }}</td>
+                <td class="py-2">{{ s.total }}</td>
+                <td class="py-2"><a href="{{ url_for('score_entry', comp_id=s.competition.id, entry_id=s.id) }}" class="text-blue-600">View</a></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" class="py-2">No scores yet</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

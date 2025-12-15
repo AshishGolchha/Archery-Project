@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}Create Competition{% endblock %}
+{% block content %}
+<div class="max-w-lg mx-auto bg-white p-6 rounded shadow">
+    <h2 class="text-xl font-bold mb-4">Competition Setup</h2>
+    <form method="post">
+        {{ form.hidden_tag() }}
+        <div class="mb-3">{{ form.name.label }}{{ form.name(class_='w-full p-2 border rounded') }}</div>
+        <div class="mb-3">{{ form.bow_type.label }}{{ form.bow_type(class_='w-full p-2 border rounded') }}</div>
+        <div class="mb-3">{{ form.age_group.label }}{{ form.age_group(class_='w-full p-2 border rounded') }}</div>
+        <div class="mb-3">{{ form.gender.label }}{{ form.gender(class_='w-full p-2 border rounded') }}</div>
+        <div class="mb-3">{{ form.target_distance.label }}{{ form.target_distance(class_='w-full p-2 border rounded') }}</div>
+        <div class="mb-3">{{ form.target_serial.label }}{{ form.target_serial(class_='w-full p-2 border rounded') }}</div>
+        <div class="mb-3">{{ form.num_students.label }}{{ form.num_students(class_='w-full p-2 border rounded') }}</div>
+        <div>{{ form.submit(class_='bg-blue-600 text-white px-4 py-2 rounded') }}</div>
+    </form>
+</div>
+{% endblock %}

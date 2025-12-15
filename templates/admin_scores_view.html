@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}Scores — {{ comp.name }}{% endblock %}
+{% block content %}
+<div class="bg-white p-6 rounded shadow">
+    <h2 class="text-lg font-bold mb-4">Scores — {{ comp.name }}</h2>
+    <a href="{{ url_for('admin_export_csv', comp_id=comp.id) }}" class="inline-block bg-gray-700 text-white px-3 py-1 rounded">Export CSV</a>
+    <a href="{{ url_for('admin_leaderboard', comp_id=comp.id) }}" class="inline-block bg-indigo-600 text-white px-3 py-1 rounded ml-2">Leaderboard</a>
+    <table class="w-full text-left">
+        <thead>
+            <tr>
+                <th class="py-2">Roll No</th>
+                <th class="py-2">Target Dist</th>
+                <th class="py-2">Target Serial</th>
+                <th class="py-2">Total</th>
+                <th class="py-2">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for e in entries %}
+            <tr class="border-t">
+                <td class="py-2">{{ e.roll_no }}</td>
+                <td class="py-2">{{ e.target_distance }}</td>
+                <td class="py-2">{{ e.target_serial }}</td>
+                <td class="py-2">{{ e.total }}</td>
+                <td class="py-2"><a href="{{ url_for('score_entry', comp_id=comp.id, entry_id=e.id) }}" class="text-blue-600">Open</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

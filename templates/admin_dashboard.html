@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block content %}
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="col-span-2 bg-white p-4 rounded shadow">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div class="bg-white p-4 rounded shadow">
+                <div class="text-sm text-gray-500">Students</div>
+                <div class="text-2xl font-bold">{{ total_students }}</div>
+            </div>
+            <div class="bg-white p-4 rounded shadow">
+                <div class="text-sm text-gray-500">Admins</div>
+                <div class="text-2xl font-bold">{{ total_admins }}</div>
+            </div>
+            <div class="bg-white p-4 rounded shadow">
+                <div class="text-sm text-gray-500">Competitions</div>
+                <div class="text-2xl font-bold">{{ total_competitions }}</div>
+            </div>
+            </div>
+
+            <h3 class="text-lg font-semibold mb-2">Recent winners</h3>
+            <ul class="bg-white p-4 rounded shadow mb-6">
+            {% for w in recent_winners %}
+                <li class="py-2 border-b">{{ w.competition }} — <strong>{{ w.roll_no }}</strong> ({{ w.total }} pts, Xs: {{ w.xs }})</li>
+            {% else %}
+                <li class="py-2">No winners yet</li>
+            {% endfor %}
+            </ul>
+        <h3 class="text-lg font-semibold mb-2">Competitions</h3>
+        <a href="{{ url_for('admin_competition_setup') }}" class="inline-block mb-3 bg-green-500 text-white px-3 py-1 rounded">Create Competition</a>
+        <table class="w-full text-left">
+            <thead>
+                <tr>
+                    <th class="py-2">Name</th>
+                    <th class="py-2">Bow</th>
+                    <th class="py-2">Age Group</th>
+                    <th class="py-2">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in competitions %}
+                <tr class="border-t">
+                    <td class="py-2">{{ c.name }}</td>
+                    <td class="py-2">{{ c.bow_type }}</td>
+                    <td class="py-2">{{ c.age_group }}</td>
+                    <td class="py-2">
+                        <a href="{{ url_for('admin_add_participants', comp_id=c.id) }}" class="text-blue-600">Add Participants</a> | <a href="{{ url_for('admin_scores_view', comp_id=c.id) }}" class="text-blue-600">View Scores</a> | 
+                        <form method="post" action="{{ url_for('admin_delete_competition_keep_scores', comp_id=c.id) }}" style="display:inline" onsubmit="return confirm('Delete competition & keep the scores in the database? This will remove the competition record but keep all score entries.');">
+                            <button type="submit" class="ml-2 px-2 py-1 bg-red-600 text-white rounded text-sm">Delete (keep scores)</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="4" class="py-2">No competitions yet</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="bg-white p-4 rounded shadow">
+        <h3 class="text-lg font-semibold mb-2">Users</h3>
+        <a href="{{ url_for('admin_create_user') }}" class="inline-block mb-3 bg-blue-500 text-white px-3 py-1 rounded">Create User</a>
+        <ul class="space-y-2">
+            {% for u in users %}
+            <li class="border p-2 rounded flex items-center justify-between">
+                <div>
+                    {{ u.username }} {% if u.is_admin %}<span class="text-sm text-gray-500">(admin)</span>{% endif %}
+                    {% if not u.is_active %}<span class="text-xs text-red-600 ml-2">[disabled]</span>{% endif %}
+                </div>
+
+                <div class="flex items-center space-x-2">
+                    <!-- Edit / view links as you already have -->
+                    {% if current_user.is_admin %}
+                        <!-- Delete form (POST) -->
+                        <form method="post" action="{{ url_for('admin_delete_user', user_id=u.id) }}" onsubmit="return confirm('Are you sure you want to disable this account? This keeps their profile data in the system.');">
+                            {{ csrf_token() if false }} <!-- if using Flask-WTF global CSRF, the form has hidden tag - adapt as needed -->
+                            <button type="submit" class="px-2 py-1 bg-red-600 text-white rounded text-sm">Delete</button>
+                        </form>
+                    {% endif %}
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endblock %}

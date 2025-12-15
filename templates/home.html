@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+{% block content %}
+
+<div class="flex flex-col items-center text-center py-20">
+
+    <img src="{{ url_for('static', filename='images/logo.png') }}"
+         alt="Dronacharya Tirandaji Sanstha Logo"
+         class="h-32 w-32 mb-6">
+
+    <h1 class="text-4xl font-extrabold text-indigo-700 mb-2">
+        Dronacharya Tirandaji Sanstha
+    </h1>
+
+    <p class="text-gray-600 text-lg mb-6">
+        M.M. Ground, Bikaner
+    </p>
+
+    <p class="max-w-2xl text-gray-700 mb-10">
+        This portal is used to manage archery students, competitions,
+        attendance and performance tracking in a structured
+        and professional way.
+    </p>
+
+    {% if not current_user %}
+        <a href="{{ url_for('login') }}"
+           class="bg-indigo-600 text-white px-8 py-3 rounded-lg hover:bg-indigo-700 transition">
+            Login to Continue
+        </a>
+    {% else %}
+        {% if current_user.is_admin %}
+            <a href="{{ url_for('admin_dashboard') }}"
+               class="bg-green-600 text-white px-8 py-3 rounded-lg hover:bg-green-700 transition">
+                Go to Admin Dashboard
+            </a>
+        {% else %}
+            <a href="{{ url_for('student_dashboard') }}"
+               class="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition">
+                Go to Student Dashboard
+            </a>
+        {% endif %}
+    {% endif %}
+</div>
+
+{% endblock %}
