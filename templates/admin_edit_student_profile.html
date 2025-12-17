@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block title %}Edit Student Profile{% endblock %}
+
+{% block content %}
+<div class="bg-white p-6 rounded shadow max-w-3xl mx-auto">
+    <h2 class="text-xl font-bold mb-4">
+        Edit Student Profile — {{ profile.roll_no }}
+    </h2>
+
+    <form method="post" enctype="multipart/form-data">
+        {{ form.hidden_tag() }}
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                {{ form.name.label }} {{ form.name(class="w-full border p-2 rounded") }}
+            </div>
+            <div>
+                {{ form.father_name.label }} {{ form.father_name(class="w-full border p-2 rounded") }}
+            </div>
+            <div>
+                {{ form.mother_name.label }} {{ form.mother_name(class="w-full border p-2 rounded") }}
+            </div>
+            <div>
+                {{ form.dob.label }} {{ form.dob(class="w-full border p-2 rounded") }}
+            </div>
+            <div>
+                {{ form.gender.label }} {{ form.gender(class="w-full border p-2 rounded") }}
+            </div>
+            <div>
+                {{ form.mobile_no.label }} {{ form.mobile_no(class="w-full border p-2 rounded") }}
+            </div>
+            <div class="md:col-span-2">
+                {{ form.address.label }} {{ form.address(class="w-full border p-2 rounded") }}
+            </div>
+        </div>
+
+        <div class="mt-4">
+            {{ form.photo.label }}
+            {{ form.photo(class="block mt-1") }}
+        </div>
+
+        <button class="mt-6 bg-indigo-600 text-white px-4 py-2 rounded">
+            Update Profile
+        </button>
+    </form>
+</div>
+{% endblock %}

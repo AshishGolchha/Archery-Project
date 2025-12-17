@@ -2,10 +2,23 @@
 {% block title %}Add Participants to {{ comp.name }}{% endblock %}
 {% block content %}
 <div class="bg-white p-6 rounded shadow">
-    <h2 class="text-lg font-bold mb-4">Add Participants — {{ comp.name }}</h2>
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+        <h2 class="text-xl font-bold">
+            Add Participants — {{ comp.name }}
+        </h2>
+
+        <a href="{{ url_for('admin_students') }}"
+        target="_blank"
+        class="inline-flex items-center justify-center gap-2
+                px-3 py-2 bg-blue-50 text-blue-700
+                border border-blue-200 rounded
+                hover:bg-blue-100 text-sm font-medium">
+            🔍 Find student roll number
+        </a>
+    </div>
     <form method="post">
-        <table class="w-full">
-            <thead>
+        <table class="hidden sm:table w-full border border-gray-200 rounded overflow-hidden">
+            <thead class="bg-gray-50">
                 <tr>
                     <th class="text-left py-2">#</th>
                     <th class="text-left py-2">Roll No</th>
@@ -16,7 +29,11 @@
                 {% for i in range(1, comp.num_students+1) %}
                 <tr>
                     <td class="py-2">{{ i }}</td>
-                    <td class="py-2"><input name="roll_{{ i }}" class="p-2 border rounded w-full"/></td>
+                    <td class="py-2">
+                        <input name="roll_{{ i }}"
+                            placeholder="e.g. DTS001"
+                            class="p-2 border rounded w-full focus:ring focus:ring-blue-200"/>
+                    </td>
                     <td class="py-2">
                         <select name="gender_{{ i }}" class="p-2 border rounded w-full">
                             <option value="Male">Male</option>
@@ -28,7 +45,40 @@
                 {% endfor %}
             </tbody>
         </table>
-        <div class="mt-4"><button class="bg-green-600 text-white px-4 py-2 rounded">Create Score Sheet</button></div>
+        <!-- Mobile View -->
+        <div class="sm:hidden space-y-4">
+            {% for i in range(1, comp.num_students+1) %}
+            <div class="border rounded-lg p-4 bg-gray-50">
+                <div class="text-sm font-semibold mb-2">
+                    Participant {{ i }}
+                </div>
+
+                <div class="mb-3">
+                    <label class="block text-xs text-gray-500 mb-1">Roll No</label>
+                    <input name="roll_{{ i }}"
+                        placeholder="e.g. DTS001"
+                        class="p-2 border rounded w-full focus:ring focus:ring-blue-200">
+                </div>
+
+                <div>
+                    <label class="block text-xs text-gray-500 mb-1">Gender</label>
+                    <select name="gender_{{ i }}" class="p-2 border rounded w-full">
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="mt-6">
+            <button
+                class="w-full sm:w-auto bg-green-600 text-white
+                    px-6 py-3 rounded font-semibold
+                    hover:bg-green-700 transition">
+                Create Score Sheet
+            </button>
+        </div>
     </form>
 </div>
 {% endblock %}

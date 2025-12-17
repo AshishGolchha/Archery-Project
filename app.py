@@ -3,7 +3,6 @@ import json
 import secrets
 import csv
 from io import StringIO
-# from
 from sqlalchemy.exc import SQLAlchemyError
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory, Response, session
@@ -13,6 +12,29 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from config import Config
 from models import db, User, StudentProfile, Competition, ScoreEntry
 from forms import CreateUserForm, StudentProfileForm, CompetitionSetupForm, PasswordResetRequestForm, PasswordResetForm, LoginForm
+
+ALLOWED_DISTANCES = {
+    'Indian': {
+        'Mini Sub Junior': [10, 20],
+        'Sub Junior': [20, 30],
+        'Junior': [30, 40],
+        'Senior': [30, 40, 50]
+    },
+    'Re-curve': {
+        'Mini Sub Junior': [30, 40, 50],
+        'Sub Junior': [60],
+        'Junior': [70],
+        'Senior': [70]
+    },
+    'Compound': {
+        'Mini Sub Junior': [30],
+        'Sub Junior': [50],
+        'Junior': [50],
+        'Senior': [50]
+    }
+}
+
+
 
 UPLOAD_FOLDER = 'static/uploads'
 ALLOWED_EXT = {'png','jpg','jpeg'}
@@ -65,7 +87,10 @@ def get_current_user():
 
 @app.context_processor
 def inject_current_user():
-    return dict(current_user=get_current_user())
+    user = None
+    if session.get('user_id'):
+        user = User.query.get(session['user_id'])
+    return dict(current_user=user)
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -73,6 +98,11 @@ def login():
 
     # 🔐 Already logged in? → redirect
     if session.get('user_id'):
+        user = get_current_user()
+        if not user:
+            session.clear()              # 🔥 VERY IMPORTANT
+            return redirect(url_for('login'))
+        
         if session.get('is_admin'):
             return redirect(url_for('admin_dashboard'))
         else:
@@ -100,8 +130,19 @@ def login():
         # 🔁 Redirect based on role
         if user.is_admin:
             return redirect(url_for('admin_dashboard'))
-        else:
-            return redirect(url_for('student_dashboard'))
+
+        # 👇 STUDENT FLOW
+        profile = StudentProfile.query.filter_by(user_id=user.id).first()
+
+        if not user.is_admin and not profile:
+            return redirect(url_for('student_profile'))
+
+        if user.is_admin:
+            return redirect(url_for('admin_dashboard'))
+
+        return redirect(url_for('student_dashboard'))
+
+
 
     return render_template('login.html', form=form)
 
@@ -142,7 +183,7 @@ def admin_dashboard():
                 'competition': c.name,
                 'roll_no': top.roll_no,
                 'total': top.total,
-                'xs': top.xs
+                'xs': top.xs or 0
             })
     current_user = get_current_user()
     return render_template(
@@ -300,8 +341,26 @@ def admin_restore_user(user_id):
 def admin_competition_setup():
     if not session.get('is_admin'):
         return redirect(url_for('login'))
+    
     form = CompetitionSetupForm()
+
+    # ✅ DEFAULT VALUES FOR FIRST LOAD
+    bow = form.bow_type.data or 'Indian'
+    age = form.age_group.data or 'Mini Sub Junior'
+
+    # ✅ SET TARGET DISTANCE CHOICES (GET + POST)
+    allowed = ALLOWED_DISTANCES.get(bow, {}).get(age, [])
+    form.target_distance.choices = [(d, f"{d}m") for d in allowed]
+
+    
+
     if form.validate_on_submit():
+        # 🔒 Distance restriction check
+        if form.target_distance.data not in allowed:
+            flash(
+                f"{bow} - {age} cannot play at {form.target_distance.data}m", 'danger')
+            return render_template('admin_competition_setup.html', form=form)
+
         comp = Competition(
             name=form.name.data,
             bow_type=form.bow_type.data,
@@ -332,11 +391,24 @@ def admin_add_participants(comp_id):
             user = None
             if roll:
                 profile = StudentProfile.query.filter_by(roll_no=roll).first()
-                if profile:
-                    user = profile.user
-                else:
+
+                if not profile:
                     flash(f'Roll {roll} not found', 'danger')
                     return render_template('admin_add_participants.html', comp=comp)
+                
+                # allowed = ALLOWED_DISTANCES.get(
+                #     profile.bow_type, {}
+                # ).get(profile.age_group, [])
+
+                # if comp.target_distance not in allowed:
+                #     flash(
+                #         f"Roll {roll}: {profile.bow_type} "
+                #         f"{profile.age_group} cannot play at "
+                #         f"{comp.target_distance}m",
+                #         'danger'
+                #     )
+                    return render_template('admin_add_participants.html', comp=comp)
+                user = profile.user
             entries.append({'roll': roll, 'gender': gender, 'user': user})
         # Create score entries rows with empty sets according to bow type
         
@@ -348,7 +420,7 @@ def admin_add_participants(comp_id):
                     for i in range(1, 13)
                 ]
 
-            elif comp.bow_type in ['Recurve', 'Compound']:
+            elif comp.bow_type in ['Re-curve', 'Compound']:
                 sets = [
                     {
                         "round": i,
@@ -375,6 +447,60 @@ def admin_add_participants(comp_id):
         return redirect(url_for('admin_scores_view', comp_id=comp.id))
     return render_template('admin_add_participants.html', comp=comp)
 
+@app.route('/admin/student/<int:user_id>/edit', methods=['GET', 'POST'])
+def admin_edit_student_profile(user_id):
+
+    # 🔐 admin check
+    if not session.get('is_admin'):
+        flash('Access denied', 'danger')
+        return redirect(url_for('login'))
+
+    user = User.query.get_or_404(user_id)
+    profile = StudentProfile.query.filter_by(user_id=user.id).first()
+
+    if not profile:
+        flash('Student profile not found', 'danger')
+        return redirect(url_for('admin_dashboard'))
+
+    form = StudentProfileForm(obj=profile)  # 👈 AUTO PREFILL
+
+    if form.validate_on_submit():
+        profile.name = form.name.data
+        profile.father_name = form.father_name.data
+        profile.mother_name = form.mother_name.data
+        profile.dob = form.dob.data
+        profile.dob_cert_no = form.dob_cert_no.data
+        profile.gender = form.gender.data
+        profile.address = form.address.data
+        profile.mobile_no = form.mobile_no.data
+        profile.parent_mobile_no = form.parent_mobile_no.data
+        profile.aadhar_no = form.aadhar_no.data
+        profile.raa_no = form.raa_no.data
+        profile.aai_no = form.aai_no.data
+        profile.bow_type = form.bow_type.data
+        profile.age_group = form.age_group.data
+
+        # photo update (optional)
+        f = request.files.get('photo')
+        if f and f.filename:
+            ext = f.filename.rsplit('.', 1)[-1].lower()
+            filename = secure_filename(f"{user.username}_photo.{ext}")
+            f.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            profile.photo_filename = filename
+
+        db.session.commit()
+        flash('Student profile updated successfully', 'success')
+        return redirect(url_for('admin_dashboard'))
+
+    return render_template(
+        'admin_edit_student_profile.html',
+        form=form,
+        profile=profile,
+        user=user
+    )
+
+
+
 def calculate_total(comp, sets):
     total = 0
 
@@ -382,7 +508,7 @@ def calculate_total(comp, sets):
         for r in sets:
             total += r['set1'] + r['set2'] + r['set3']
 
-    elif comp.bow_type in ['Recurve', 'Compound']:
+    elif comp.bow_type in ['Re-curve', 'Compound']:
         for r in sets:
             total += (
                 r['set1'] + r['set2'] + r['set3'] +
@@ -441,6 +567,29 @@ def admin_leaderboard(comp_id):
     entries = sorted(comp.score_entries, key=lambda e: ((e.total or 0), (e.xs or 0)), reverse=True)
     return render_template('admin_leaderboard.html', comp=comp, entries=entries)
 
+@app.route('/admin/students')
+def admin_students():
+    if not session.get('is_admin'):
+        return redirect(url_for('login'))
+
+    q = request.args.get('q', '').strip()
+
+    query = StudentProfile.query
+
+    if q:
+        query = query.filter(
+            StudentProfile.name.ilike(f"%{q}%")
+        )
+
+    students = query.order_by(StudentProfile.name.asc()).all()
+
+    return render_template(
+        'admin_students.html',
+        students=students,
+        q=q
+    )
+
+
 @app.route('/admin/competition/<int:comp_id>/export_csv')
 def admin_export_csv(comp_id):
     if not session.get('is_admin'):
@@ -481,15 +630,19 @@ def student_dashboard():
     # 🔐 login check
     if not session.get('user_id'):
         return redirect(url_for('login'))
+    
+    current_user = get_current_user()
 
-    # 🔐 admin ko student dashboard nahi
+    if not current_user:
+        session.clear()      # 🔥 LOOP TODTA HAI
+        return redirect(url_for('login'))
+
     if session.get('is_admin'):
         return redirect(url_for('admin_dashboard'))
 
-    current_user = get_current_user()
-
     # 🔥 IMPORTANT PART: fetch competitions via ScoreEntry
-    entries = ScoreEntry.query.filter_by(user_id=current_user.id).all()
+    entries = (ScoreEntry.query.filter_by(user_id=current_user.id).join(Competition).all())
+
 
     competitions = []
     for e in entries:
@@ -511,9 +664,39 @@ def student_profile():
     if session.get('is_admin'):
         flash('Admins do not have student profiles', 'info')
         return redirect(url_for('admin_dashboard'))
+    
+    current_user = get_current_user()
+    if not current_user:
+        return redirect(url_for('login'))
+
+    # # Student cannot edit profile again once created
+    # if profile and not session.get('is_admin'):
+    #     return redirect(url_for('student_dashboard'))
+
+    
     form = StudentProfileForm()
     if form.validate_on_submit():
-        current_user = get_current_user()
+        # 🔒 Duplicate check (UNIQUE fields)
+        existing = StudentProfile.query.filter(
+            (StudentProfile.dob_cert_no == form.dob_cert_no.data) |
+            (StudentProfile.aadhar_no == form.aadhar_no.data) |
+            (StudentProfile.raa_no == form.raa_no.data) |
+            (StudentProfile.aai_no == form.aai_no.data)
+        ).first()
+
+        # Agar koi record mila aur wo current user ka nahi hai
+        if existing and existing.user_id != current_user.id:
+            flash(
+                'Profile cannot be saved. One of the following already exists: '
+                'DOB Certificate No / Aadhar No / RAA No / AAI No',
+                'danger'
+            )
+            return render_template(
+                'student_profile_form.html',
+                form=form,
+                profile=current_user.profile
+            )
+
         profile = current_user.profile or StudentProfile(user=current_user)
         profile.name = form.name.data
         profile.father_name = form.father_name.data
@@ -558,24 +741,6 @@ def student_profile():
         db.session.commit()
         flash('Profile saved and roll number assigned: ' + profile.roll_no, 'success')
         return redirect(url_for('student_dashboard'))
-    # prefill form from existing profile
-    current_user = get_current_user()
-    if current_user and current_user.profile:
-        profile = current_user.profile
-        form.name.data = profile.name
-        form.father_name.data = profile.father_name
-        form.mother_name.data = profile.mother_name
-        form.dob.data = profile.dob
-        form.dob_cert_no.data = profile.dob_cert_no
-        form.gender.data = profile.gender
-        form.address.data = profile.address
-        form.mobile_no.data = profile.mobile_no
-        form.parent_mobile_no.data = profile.parent_mobile_no
-        form.aadhar_no.data = profile.aadhar_no
-        form.raa_no.data = profile.raa_no
-        form.aai_no.data = profile.aai_no
-        form.bow_type.data = profile.bow_type
-        form.age_group.data = profile.age_group
     return render_template('student_profile_form.html', form=form, profile=current_user.profile)
 
 @app.route('/competition/<int:comp_id>/score_entry/<int:entry_id>', methods=['GET','POST'])
@@ -591,7 +756,7 @@ def score_entry(comp_id, entry_id):
     if not session.get('is_admin') and entry.user_id != current_user.id:
         flash('Access denied', 'danger')
         return redirect(url_for('student_dashboard'))
-    
+        
     if request.method == 'POST' and session.get('is_admin'):
 
         sets = json.loads(entry.sets)
@@ -599,19 +764,32 @@ def score_entry(comp_id, entry_id):
         for i, r in enumerate(sets):
 
             # Common sets (Indian / Recurve / Compound)
-            r['set1'] = int(request.form.get(f'set1_{i}', 0))
-            r['set2'] = int(request.form.get(f'set2_{i}', 0))
-            r['set3'] = int(request.form.get(f'set3_{i}', 0))
-
+            r['set1'] = int(request.form.get(f'set1_{i}') or 0)
+            r['set2'] = int(request.form.get(f'set2_{i}') or 0)
+            r['set3'] = int(request.form.get(f'set3_{i}') or 0)
             # Extra sets only for Recurve & Compound
-            if comp.bow_type in ['Recurve', 'Compound']:
-                r['set4'] = int(request.form.get(f'set4_{i}', 0))
-                r['set5'] = int(request.form.get(f'set5_{i}', 0))
-                r['set6'] = int(request.form.get(f'set6_{i}', 0))
+            if comp.bow_type in ['Re-curve', 'Compound']:
+                r['set4'] = int(request.form.get(f'set4_{i}') or 0)
+                r['set5'] = int(request.form.get(f'set5_{i}') or 0)
+                r['set6'] = int(request.form.get(f'set6_{i}') or 0)
 
             # X count
-            r['xs'] = int(request.form.get(f'xs_{i}', 0))
-        
+            r['xs'] = int(request.form.get(f'xs_{i}') or 0)
+
+            # 🔒 X count validation per round
+            max_x = 3 if comp.bow_type == 'Indian' else 6
+
+            if r['xs'] < 0 or r['xs'] > max_x:
+                flash(
+                    f"Invalid X count in round {r['round']}. "
+                    f"Allowed range: 0 to {max_x}",
+                    'danger'
+                )
+                return redirect(url_for('score_entry',
+                                        comp_id=comp.id,
+                                        entry_id=entry.id))
+
+            
 
         # Total auto calculate
         total = 0
@@ -625,6 +803,7 @@ def score_entry(comp_id, entry_id):
                 )
 
         entry.total = total
+        entry.xs = sum(r['xs'] for r in sets)
         entry.sets = json.dumps(sets)
 
         db.session.commit()

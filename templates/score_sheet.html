@@ -2,9 +2,14 @@
 {% block title %}Score Entry{% endblock %}
 {% block content %}
 <div class="bg-white p-6 rounded shadow">
-    <h2 class="text-lg font-bold mb-4">Score Sheet — {{ comp.name }} — {{ entry.roll_no }}</h2>
+    <h1 class="text-xl font-bold text-center lg:text-left mb-1">
+        {{ comp.name }}
+    </h1>
+    <h2 class="text-lg font-semibold text-center lg:text-left mb-4">
+        Roll No: {{ entry.roll_no }}
+    </h2>
     <form method="post">
-        <table class="w-full text-left">
+        <table class="hidden lg:table w-full text-left">
             <thead>
             <tr>
                 <th>Round</th>
@@ -33,7 +38,7 @@
                 <!-- Set 1–3 -->
                 <td>
                     {% if current_user.is_admin %}
-                        <input name="set1_{{ loop.index0 }}" value="{{ r.set1 }}" class="p-2 border w-20">
+                        <input type="number" min="0" name="set1_{{ loop.index0 }}" value="{{ '' if r.set1 == 0 else r.set1 }}" class="p-2 border w-20">
                     {% else %}
                         {{ r.set1 }}
                     {% endif %}
@@ -41,7 +46,7 @@
 
                 <td>
                     {% if current_user.is_admin %}
-                        <input name="set2_{{ loop.index0 }}" value="{{ r.set2 }}" class="p-2 border w-20">
+                        <input type="number" min="0" name="set2_{{ loop.index0 }}" value="{{ '' if r.set2 == 0 else r.set2 }}" class="p-2 border w-20">
                     {% else %}
                         {{ r.set2 }}
                     {% endif %}
@@ -49,7 +54,7 @@
 
                 <td>
                     {% if current_user.is_admin %}
-                        <input name="set3_{{ loop.index0 }}" value="{{ r.set3 }}" class="p-2 border w-20">
+                        <input type="number" min="0" name="set3_{{ loop.index0 }}" value="{{ '' if r.set3 == 0 else r.set3 }}" class="p-2 border w-20">
                     {% else %}
                         {{ r.set3 }}
                     {% endif %}
@@ -59,7 +64,7 @@
                 {% if comp.bow_type in ['Recurve', 'Compound'] %}
                     <td>
                         {% if current_user.is_admin %}
-                            <input name="set4_{{ loop.index0 }}" value="{{ r.set4 }}" class="p-2 border w-20">
+                            <input type="number" min="0" name="set4_{{ loop.index0 }}" value="{{ '' if r.set4 == 0 else r.set4 }}" class="p-2 border w-20">
                         {% else %}
                             {{ r.set4 }}
                         {% endif %}
@@ -67,7 +72,7 @@
 
                     <td>
                         {% if current_user.is_admin %}
-                            <input name="set5_{{ loop.index0 }}" value="{{ r.set5 }}" class="p-2 border w-20">
+                            <input type="number" min="0" name="set5_{{ loop.index0 }}" value="{{ '' if r.set5 == 0 else r.set5 }}" class="p-2 border w-20">
                         {% else %}
                             {{ r.set5 }}
                         {% endif %}
@@ -75,7 +80,7 @@
 
                     <td>
                         {% if current_user.is_admin %}
-                            <input name="set6_{{ loop.index0 }}" value="{{ r.set6 }}" class="p-2 border w-20">
+                            <input type="number" min="0" name="set6_{{ loop.index0 }}" value="{{ '' if r.set6 == 0 else r.set6 }}" class="p-2 border w-20">
                         {% else %}
                             {{ r.set6 }}
                         {% endif %}
@@ -94,7 +99,19 @@
                 <!-- X count (ADMIN ONLY) -->
                 <td>
                     {% if current_user.is_admin %}
-                        <input type="number" name="xs_{{ loop.index0 }}" value="{{ r.xs }}" class="p-2 border w-20">
+                        {% if comp.bow_type == 'Indian' %}
+                            <input type="number"
+                                min="0" max="3"
+                                name="xs_{{ loop.index0 }}"
+                                value="{{ '' if r.xs == 0 else r.xs }}"
+                                class="p-2 border w-20">
+                        {% else %}
+                            <input type="number"
+                                min="0" max="6"
+                                name="xs_{{ loop.index0 }}"
+                                value="{{ '' if r.xs == 0 else r.xs }}"
+                                class="p-2 border w-20">
+                        {% endif %}
                     {% else %}
                         {{ r.xs }}
                     {% endif %}
@@ -105,8 +122,78 @@
             </tbody>
 
         </table>
+        <!-- Mobile View -->
+        <div class="lg:hidden space-y-4">
+
+        {% for r in sets %}
+        <div class="border rounded-lg p-4 bg-gray-50 shadow-sm">
+
+            <div class="flex justify-between items-center mb-3">
+                <div class="font-semibold">Round {{ r.round }}</div>
+                <div class="text-sm text-gray-600">
+                    Total:
+                    {% if comp.bow_type == 'Indian' %}
+                        {{ r.set1 + r.set2 + r.set3 }}
+                    {% else %}
+                        {{ r.set1 + r.set2 + r.set3 + r.set4 + r.set5 + r.set6 }}
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Sets -->
+            <div class="grid grid-cols-3 gap-2 mb-3">
+                {% for s in [1,2,3] %}
+                <div>
+                    <div class="text-xs text-gray-500">Set {{ s }}</div>
+                    {% if current_user.is_admin %}
+                        <input type="number" min="0"
+                            name="set{{ s }}_{{ loop.index0 }}"
+                            value="{{ '' if r['set' ~ s] == 0 else r['set' ~ s] }}"
+                            class="w-full p-2 border rounded">
+                    {% else %}
+                        <div class="font-medium">{{ r['set' ~ s] }}</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+
+                {% if comp.bow_type in ['Recurve','Compound'] %}
+                    {% for s in [4,5,6] %}
+                    <div>
+                        <div class="text-xs text-gray-500">Set {{ s }}</div>
+                        {% if current_user.is_admin %}
+                            <input type="number" min="0"
+                                name="set{{ s }}_{{ loop.index0 }}"
+                                value="{{ '' if r['set' ~ s] == 0 else r['set' ~ s] }}"
+                                class="w-full p-2 border rounded">
+                        {% else %}
+                            <div class="font-medium">{{ r['set' ~ s] }}</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+
+            <!-- X count -->
+            <div>
+                <div class="text-xs text-gray-500 mb-1">No. of X's</div>
+                {% if current_user.is_admin %}
+                    <input type="number"
+                        min="0"
+                        max="{{ 3 if comp.bow_type == 'Indian' else 6 }}"
+                        name="xs_{{ loop.index0 }}"
+                        value="{{ '' if r.xs == 0 else r.xs }}"
+                        class="w-full p-2 border rounded">
+                {% else %}
+                    <div class="font-medium">{{ r.xs }}</div>
+                {% endif %}
+            </div>
+
+        </div>
+        {% endfor %}
+
+        </div>
         {% if current_user.is_admin %}
-        <div class="mt-4"><button class="bg-green-600 text-white px-4 py-2 rounded">Save Scores</button></div>
+        <div class="mt-4"><button class="bg-green-600 text-white px-4 py-2 rounded w-full lg:w-auto">Save Scores</button></div>
         {% endif %}
     </form>
 </div>

@@ -2,10 +2,24 @@
 {% block title %}Scores — {{ comp.name }}{% endblock %}
 {% block content %}
 <div class="bg-white p-6 rounded shadow">
-    <h2 class="text-lg font-bold mb-4">Scores — {{ comp.name }}</h2>
-    <a href="{{ url_for('admin_export_csv', comp_id=comp.id) }}" class="inline-block bg-gray-700 text-white px-3 py-1 rounded">Export CSV</a>
-    <a href="{{ url_for('admin_leaderboard', comp_id=comp.id) }}" class="inline-block bg-indigo-600 text-white px-3 py-1 rounded ml-2">Leaderboard</a>
-    <table class="w-full text-left">
+    <h1 class="text-xl font-bold text-center sm:text-left mb-1">
+        {{ comp.name }}
+    </h1>
+    <h2 class="text-lg font-semibold text-center sm:text-left mb-4">
+        Scores
+    </h2>
+    <div class="flex flex-col sm:flex-row gap-2 mb-4 justify-center sm:justify-start">
+        <a href="{{ url_for('admin_export_csv', comp_id=comp.id) }}"
+        class="bg-gray-700 text-white px-4 py-2 rounded text-center">
+            Export CSV
+        </a>
+
+        <a href="{{ url_for('admin_leaderboard', comp_id=comp.id) }}"
+        class="bg-indigo-600 text-white px-4 py-2 rounded text-center">
+            Leaderboard
+        </a>
+    </div>
+    <table class="hidden sm:table w-full text-left">
         <thead>
             <tr>
                 <th class="py-2">Roll No</th>
@@ -19,7 +33,7 @@
             {% for e in entries %}
             <tr class="border-t">
                 <td class="py-2">{{ e.roll_no }}</td>
-                <td class="py-2">{{ e.target_distance }}</td>
+                <td class="py-2">{{ e.target_distance }}m</td>
                 <td class="py-2">{{ e.target_serial }}</td>
                 <td class="py-2">{{ e.total }}</td>
                 <td class="py-2"><a href="{{ url_for('score_entry', comp_id=comp.id, entry_id=e.id) }}" class="text-blue-600">Open</a></td>
@@ -27,5 +41,46 @@
             {% endfor %}
         </tbody>
     </table>
+    <!-- Mobile View -->
+    <div class="sm:hidden space-y-4 mt-4">
+        {% for e in entries %}
+        <div class="border rounded-lg p-4 bg-gray-50 shadow-sm">
+
+            <div class="text-sm text-gray-500 mb-1">
+                Roll No
+            </div>
+            <div class="font-semibold mb-2">
+                {{ e.roll_no }}
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 text-sm mb-3">
+                <div>
+                    <div class="text-gray-500">Distance</div>
+                    <div class="font-medium">{{ e.target_distance }}m</div>
+                </div>
+
+                <div>
+                    <div class="text-gray-500">Target</div>
+                    <div class="font-medium">{{ e.target_serial }}</div>
+                </div>
+
+                <div>
+                    <div class="text-gray-500">Total</div>
+                    <div class="font-bold">{{ e.total }}</div>
+                </div>
+            </div>
+
+            <a href="{{ url_for('score_entry', comp_id=comp.id, entry_id=e.id) }}"
+            class="block text-center bg-indigo-600 text-white py-2 rounded
+                    hover:bg-indigo-700 transition">
+                Open Score Sheet
+            </a>
+        </div>
+        {% else %}
+            <div class="text-center text-gray-500">
+                No scores available
+            </div>
+        {% endfor %}
+    </div>
 </div>
 {% endblock %}

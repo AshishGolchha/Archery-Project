@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}Students Directory{% endblock %}
+
+{% block content %}
+<div class="bg-white p-6 rounded shadow">
+
+    <h2 class="text-xl font-bold mb-4">Students Directory</h2>
+
+    <!-- 🔍 SEARCH BAR -->
+    <form method="get" class="mb-4">
+        <input
+            type="text"
+            name="q"
+            value="{{ q }}"
+            placeholder="Search by student name..."
+            class="w-full p-2 border rounded"
+        >
+    </form>
+
+    <table class="w-full text-left border">
+        <thead class="bg-gray-100">
+            <tr>
+                <th class="p-2 border">Name</th>
+                <th class="p-2 border">Roll No</th>
+                <th class="p-2 border">Bow Type</th>
+                <th class="p-2 border">Age Group</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in students %}
+            <tr class="border-t">
+                <td class="p-2 border">{{ s.name }}</td>
+                <td class="p-2 border font-mono">{{ s.roll_no }}</td>
+                <td class="p-2 border">{{ s.bow_type }}</td>
+                <td class="p-2 border">{{ s.age_group }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="4" class="p-4 text-center text-gray-500">
+                    No students found
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</div>
+{% endblock %}

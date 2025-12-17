@@ -15,4 +15,52 @@
         <div>{{ form.submit(class_='bg-blue-600 text-white px-4 py-2 rounded') }}</div>
     </form>
 </div>
+<script>
+const ALLOWED_DISTANCES = {
+    "Indian": {
+        "Mini Sub Junior": [10, 20],
+        "Sub Junior": [20, 30],
+        "Junior": [30, 40],
+        "Senior": [30, 40, 50]
+    },
+    "Re-curve": {
+        "Mini Sub Junior": [30, 40, 50],
+        "Sub Junior": [60],
+        "Junior": [70],
+        "Senior": [70]
+    },
+    "Compound": {
+        "Mini Sub Junior": [30],
+        "Sub Junior": [50],
+        "Junior": [50],
+        "Senior": [50]
+    }
+};
+
+const bowSelect = document.querySelector('[name="bow_type"]');
+const ageSelect = document.querySelector('[name="age_group"]');
+const distanceSelect = document.querySelector('[name="target_distance"]');
+
+function updateDistances() {
+    const bow = bowSelect.value;
+    const age = ageSelect.value;
+
+    // clear existing options
+    distanceSelect.innerHTML = '';
+
+    if (ALLOWED_DISTANCES[bow] && ALLOWED_DISTANCES[bow][age]) {
+        ALLOWED_DISTANCES[bow][age].forEach(d => {
+            const opt = document.createElement('option');
+            opt.value = d;
+            opt.textContent = d + "m";
+            distanceSelect.appendChild(opt);
+        });
+    }
+}
+
+// run when bow or age changes
+bowSelect.addEventListener('change', updateDistances);
+ageSelect.addEventListener('change', updateDistances);
+</script>
+
 {% endblock %}

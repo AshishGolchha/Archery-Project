@@ -1,93 +1,146 @@
 <!doctype html>
 <html lang="en">
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{% block title %}Archery Portal{% endblock %}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>{% block title %}Archery Portal{% endblock %}</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+    </head>
 
-<body class="bg-gray-100 text-gray-900">
+    <body class="bg-gray-100 text-gray-900">
+        <nav class="bg-white shadow sticky top-0 z-50">
+            <div class="max-w-6xl mx-auto px-4">
+                <div class="flex items-center justify-between h-16">
 
-<nav class="bg-white shadow">
-    <div class="max-w-6xl mx-auto px-4">
-        <div class="flex justify-between">
+                    <!-- Left: Logo + Name -->
+                    <a href="/" class="flex items-center gap-3">
+                        <img src="{{ url_for('static', filename='images/logo.png') }}"
+                            alt="Logo"
+                            class="h-10 w-10 rounded-full">
 
-            <!-- Left -->
-            <div class="flex space-x-4">
-                <a href="/" class="flex items-center space-x-3 py-4 px-2">
-                    <img src="{{ url_for('static', filename='images/logo.png') }}"
-                        alt="Dronacharya Tirandaji Sanstha Logo"
-                        class="h-10 w-10 rounded-full">
-
-                    <div class="leading-tight">
-                        <div class="text-sm font-bold text-gray-800">
-                            Dronacharya Tirandaji Sanstha
+                        <div class="hidden sm:block leading-tight">
+                            <div class="text-sm font-bold text-gray-800">
+                                Dronacharya Tirandaji Sanstha
+                            </div>
+                            <div class="text-xs text-gray-500">
+                                Archery Management System
+                            </div>
                         </div>
-                        <div class="text-xs text-gray-500">
-                            Archery Management System
-                        </div>
-                    </div>
-                </a>
-
-
-                {% if current_user and current_user.is_admin %}
-                    <a href="{{ url_for('admin_dashboard') }}" class="py-5 px-3 text-gray-700 hover:text-indigo-600">
-                        Admin
                     </a>
-                {% endif %}
+
+                    <!-- Right -->
+                    <div class="flex items-center gap-2">
+
+                        <!-- Desktop Menu -->
+                        <div class="hidden sm:flex items-center gap-2">
+
+                            {% if session.get('user_id') %}
+
+                                {% if session.get('is_admin') %}
+                                    <a href="{{ url_for('admin_dashboard') }}"
+                                    class="px-4 py-2 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700">
+                                        Admin Dashboard
+                                    </a>
+                                {% else %}
+                                    <a href="{{ url_for('student_dashboard') }}"
+                                    class="px-4 py-2 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700">
+                                        Student Dashboard
+                                    </a>
+                                {% endif %}
+
+                                <a href="{{ url_for('logout') }}"
+                                class="px-4 py-2 bg-red-500 text-white rounded text-sm hover:bg-red-600">
+                                    Logout
+                                </a>
+
+                            {% else %}
+                                <a href="{{ url_for('login') }}"
+                                class="px-4 py-2 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700">
+                                    Login
+                                </a>
+                            {% endif %}
+
+                        </div>
+
+                        <!-- Hamburger button (mobile) -->
+                        <button id="menuBtn"
+                                class="sm:hidden p-2 rounded bg-gray-100 border">
+                            ☰
+                        </button>
+                    </div>
+                </div>
             </div>
+        </nav>
 
-            <!-- Right -->
-            <div class="flex items-center space-x-3">
-                {% if current_user %}
-                    <span class="text-sm text-gray-600">
-                        Hello {{ current_user.username }}
-                    </span>
+        <!-- Mobile Menu -->
+        <div id="mobileMenu"
+            class="hidden sm:hidden bg-white border-b px-4 py-3 space-y-2">
 
-                    <a href="{{ url_for('logout') }}"
-                       class="py-2 px-4 bg-red-500 text-white rounded hover:bg-red-600 transition">
-                        Logout
+            {% if session.get('user_id') %}
+
+                {% if session.get('is_admin') %}
+                    <a href="{{ url_for('admin_dashboard') }}"
+                    class="block w-full px-4 py-2 bg-indigo-600 text-white rounded text-center">
+                        Admin Dashboard
                     </a>
                 {% else %}
-                    <a href="{{ url_for('login') }}"
-                       class="py-2 px-4 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition">
-                        Login
+                    <a href="{{ url_for('student_dashboard') }}"
+                    class="block w-full px-4 py-2 bg-indigo-600 text-white rounded text-center">
+                        Student Dashboard
                     </a>
                 {% endif %}
-            </div>
+
+                <a href="{{ url_for('logout') }}"
+                class="block w-full px-4 py-2 bg-red-500 text-white rounded text-center">
+                    Logout
+                </a>
+
+            {% else %}
+                <a href="{{ url_for('login') }}"
+                class="block w-full px-4 py-2 bg-indigo-600 text-white rounded text-center">
+                    Login
+                </a>
+            {% endif %}
 
         </div>
-    </div>
-</nav>
 
-<main class="max-w-6xl mx-auto p-6">
 
-    <!-- Flash messages -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <div class="space-y-2 mb-4">
-                {% for category, msg in messages %}
-                    <div class="p-3 rounded
-                        {% if category == 'success' %}
-                            bg-green-100 text-green-800
-                        {% elif category == 'danger' %}
-                            bg-red-100 text-red-800
-                        {% elif category == 'warning' %}
-                            bg-yellow-100 text-yellow-800
-                        {% else %}
-                            bg-blue-100 text-blue-800
-                        {% endif %}
-                    ">
-                        {{ msg }}
+        <main class="max-w-6xl mx-auto px-3 sm:px-6 py-4">
+
+            <!-- Flash messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="space-y-2 mb-4 text-sm">
+                        {% for category, msg in messages %}
+                            <div class="p-3 rounded
+                                {% if category == 'success' %}
+                                    bg-green-100 text-green-800
+                                {% elif category == 'danger' %}
+                                    bg-red-100 text-red-800
+                                {% elif category == 'warning' %}
+                                    bg-yellow-100 text-yellow-800
+                                {% else %}
+                                    bg-blue-100 text-blue-800
+                                {% endif %}
+                            ">
+                                {{ msg }}
+                            </div>
+                        {% endfor %}
                     </div>
-                {% endfor %}
-            </div>
-        {% endif %}
-    {% endwith %}
+                {% endif %}
+            {% endwith %}
 
-    {% block content %}{% endblock %}
-</main>
+            {% block content %}{% endblock %}
+        </main>
+        <script>
+            const btn = document.getElementById('menuBtn');
+            const menu = document.getElementById('mobileMenu');
 
-</body>
+            if (btn) {
+                btn.addEventListener('click', () => {
+                    menu.classList.toggle('hidden');
+                });
+            }
+        </script>
+    </body>
 </html>

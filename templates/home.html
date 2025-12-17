@@ -20,25 +20,6 @@
         attendance and performance tracking in a structured
         and professional way.
     </p>
-
-    {% if not current_user %}
-        <a href="{{ url_for('login') }}"
-           class="bg-indigo-600 text-white px-8 py-3 rounded-lg hover:bg-indigo-700 transition">
-            Login to Continue
-        </a>
-    {% else %}
-        {% if current_user.is_admin %}
-            <a href="{{ url_for('admin_dashboard') }}"
-               class="bg-green-600 text-white px-8 py-3 rounded-lg hover:bg-green-700 transition">
-                Go to Admin Dashboard
-            </a>
-        {% else %}
-            <a href="{{ url_for('student_dashboard') }}"
-               class="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition">
-                Go to Student Dashboard
-            </a>
-        {% endif %}
-    {% endif %}
 </div>
 
 {% endblock %}

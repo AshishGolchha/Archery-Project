@@ -2,9 +2,8 @@
 {% block title %}Student Dashboard{% endblock %}
 {% block content %}
 <div class="bg-white p-6 rounded shadow">
-    <h2 class="text-lg font-bold mb-4">Your Scores</h2>
-    <a href="{{ url_for('student_profile') }}" class="inline-block mb-3 bg-blue-500 text-white px-3 py-1 rounded">Edit Profile</a>
-    <table class="w-full text-left">
+    <h2 class="text-xl font-bold mb-4 text-center sm:text-left">Your Scores</h2>
+    <table class="hidden sm:table w-full text-left">
         <thead>
             <tr>
                 <th class="py-2">Competition</th>
@@ -19,12 +18,60 @@
                 <td class="py-2">{{ s.competition.name if s.competition else 'Unknown' }}</td>
                 <td class="py-2">{{ s.roll_no }}</td>
                 <td class="py-2">{{ s.total }}</td>
-                <td class="py-2"><a href="{{ url_for('score_entry', comp_id=s.competition.id, entry_id=s.id) }}" class="text-blue-600">View</a></td>
+                <td class="py-2">
+                    {% if s.competition %}
+                        <a href="{{ url_for('score_entry', comp_id=s.competition.id, entry_id=s.id) }}"
+                        class="text-blue-600">View</a>
+                    {% else %}
+                        <span class="text-gray-400">N/A</span>
+                    {% endif %}
+                </td>
+
             </tr>
             {% else %}
             <tr><td colspan="4" class="py-2">No scores yet</td></tr>
             {% endfor %}
         </tbody>
     </table>
+    <!-- Mobile View -->
+    <div class="sm:hidden space-y-4">
+        {% for s in entries %}
+        <div class="border rounded-lg p-4 bg-gray-50 shadow-sm">
+
+            <div class="text-sm text-gray-500 mb-1">
+                Competition
+            </div>
+            <div class="font-semibold mb-2">
+                {{ s.competition.name if s.competition else 'Unknown' }}
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 text-sm mb-3">
+                <div>
+                    <div class="text-gray-500">Roll No</div>
+                    <div class="font-medium">{{ s.roll_no }}</div>
+                </div>
+
+                <div>
+                    <div class="text-gray-500">Total</div>
+                    <div class="font-medium">{{ s.total }}</div>
+                </div>
+            </div>
+
+            {% if s.competition %}
+                <a href="{{ url_for('score_entry', comp_id=s.competition.id, entry_id=s.id) }}"
+                class="block text-center bg-indigo-600 text-white py-2 rounded
+                        hover:bg-indigo-700 transition">
+                    View Score
+                </a>
+            {% else %}
+                <div class="text-center text-gray-400 text-sm">No competition data</div>
+            {% endif %}
+        </div>
+        {% else %}
+            <div class="text-center text-gray-500">
+                No scores yet
+            </div>
+        {% endfor %}
+    </div>
 </div>
 {% endblock %}

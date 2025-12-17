@@ -56,8 +56,12 @@
             </tbody>
         </table>
     </div>
+
     <div class="bg-white p-4 rounded shadow">
         <h3 class="text-lg font-semibold mb-2">Users</h3>
+        <a href="{{ url_for('admin_students') }}" class="inline-block mb-3 bg-indigo-600 text-white px-3 py-1 rounded">
+            View Students Directory
+        </a>
         <a href="{{ url_for('admin_create_user') }}" class="inline-block mb-3 bg-blue-500 text-white px-3 py-1 rounded">Create User</a>
         <ul class="space-y-2">
             {% for u in users %}
@@ -69,6 +73,12 @@
 
                 <div class="flex items-center space-x-2">
                     <!-- Edit / view links as you already have -->
+                     {% if not u.is_admin %}
+                        <a href="{{ url_for('admin_edit_student_profile', user_id=u.id) }}"
+                        class="px-2 py-1 bg-indigo-600 text-white rounded text-sm">
+                            Edit Profile
+                        </a>
+                    {% endif %}
                     {% if current_user.is_admin %}
                         <!-- Delete form (POST) -->
                         <form method="post" action="{{ url_for('admin_delete_user', user_id=u.id) }}" onsubmit="return confirm('Are you sure you want to disable this account? This keeps their profile data in the system.');">
