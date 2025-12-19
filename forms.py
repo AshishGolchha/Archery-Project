@@ -40,8 +40,8 @@ class StudentProfileForm(FlaskForm):
     mobile_no = StringField('Mobile No.', validators=[DataRequired(), Regexp(r'^\d{7,15}$', message='Enter a valid phone number (digits only)')])
     parent_mobile_no = StringField("Parent's Mobile No.", validators=[Optional(), Regexp(r'^\d{7,15}$', message='Enter a valid phone number (digits only)')])
     aadhar_no = StringField('Aadhar No.',validators=[DataRequired(),Regexp(
-                r'^[1-9][0-9]{3}-[0-9]{4}-[0-9]{4}$',
-                message='Aadhar format must be XXXX-XXXX-XXXX and cannot start with 0')])
+                r'^[1-9][0-9]{11}$',
+                message='Aadhar must be exactly 12 digits and cannot start with 0')])
     # RAA and AAI: allow alphanumeric, limit 10 chars (adjust if you want different)
     raa_no = StringField('RAA No.', validators=[Optional(), Length(max=10), Regexp(r'^[A-Za-z0-9\-]*$', message='Use letters, numbers or hyphens only')])
     aai_no = StringField('AAI No.', validators=[Optional(), Length(max=10), Regexp(r'^[A-Za-z0-9\-]*$', message='Use letters, numbers or hyphens only')])
@@ -58,5 +58,7 @@ class CompetitionSetupForm(FlaskForm):
     gender = SelectField('Gender', choices=[('Male','Male'),('Female','Female'),('Mixed','Mixed')])
     target_distance = SelectField('Target Distance',choices=[],coerce=int,validators=[DataRequired()])
     target_serial = StringField('Target Serial No.', validators=[DataRequired()])
+    is_team_based = BooleanField('Team Based Competition')
+    num_teams = IntegerField('Number of Teams')
     num_students = IntegerField('Number of Students', validators=[DataRequired()])
     submit = SubmitField('Create Competition')

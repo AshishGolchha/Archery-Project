@@ -23,6 +23,9 @@
         <thead>
             <tr>
                 <th class="py-2">Roll No</th>
+                {% if comp.is_team_based %}
+                    <th class="py-2">Team</th>
+                {% endif %}
                 <th class="py-2">Target Dist</th>
                 <th class="py-2">Target Serial</th>
                 <th class="py-2">Total</th>
@@ -33,6 +36,11 @@
             {% for e in entries %}
             <tr class="border-t">
                 <td class="py-2">{{ e.roll_no }}</td>
+                {% if comp.is_team_based %}
+                    <td class="py-2">
+                        {{ e.team.name if e.team else '—' }}
+                    </td>
+                {% endif %}
                 <td class="py-2">{{ e.target_distance }}m</td>
                 <td class="py-2">{{ e.target_serial }}</td>
                 <td class="py-2">{{ e.total }}</td>

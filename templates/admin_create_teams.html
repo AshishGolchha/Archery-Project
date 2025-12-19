@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2 class="text-lg font-bold mb-4">Create Teams — {{ comp.name }}</h2>
+
+<form method="post">
+    <input name="team_name" placeholder="Team A" class="border p-2 mb-2 w-full">
+    <input name="team_name" placeholder="Team B" class="border p-2 mb-2 w-full">
+    <input name="team_name" placeholder="Team C" class="border p-2 mb-2 w-full">
+
+    <button class="bg-green-600 text-white px-4 py-2 rounded">
+        Create Teams
+    </button>
+</form>
+{% endblock %}

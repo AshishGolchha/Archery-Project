@@ -10,18 +10,48 @@
   </h2>
   <table class="hidden sm:table w-full text-left">
     <thead>
-      <tr class="border-t"><th>Rank</th><th>Roll No</th><th>Total</th><th>X's</th></tr>
-    </thead>
-    <tbody>
-      {% for entry in entries %}
-      <tr class="border-t">
-        <td>{{ loop.index }}</td>
-        <td>{{ entry.roll_no }}</td>
-        <td>{{ entry.total }}</td>
-        <td>{{ entry.xs }}</td>
+      <tr>
+        <th>Rank</th>
+
+        {% if comp.is_team_based %}
+            <th>Team</th>
+        {% else %}
+            <th>Roll No</th>
+        {% endif %}
+
+        <th>Total</th>
+        <th>X's</th>
       </tr>
-      {% endfor %}
+    </thead>
+
+    <tbody>
+
+    {% if comp.is_team_based %}
+
+        {% for t in team_scores %}
+        <tr class="border-t">
+            <td>{{ loop.index }}</td>
+            <td class="font-semibold">{{ t.team_name }}</td>
+            <td>{{ t.total }}</td>
+            <td>{{ t.xs }}</td>
+        </tr>
+        {% endfor %}
+
+    {% else %}
+
+        {% for entry in entries %}
+        <tr class="border-t">
+            <td>{{ loop.index }}</td>
+            <td>{{ entry.roll_no }}</td>
+            <td>{{ entry.total }}</td>
+            <td>{{ entry.xs }}</td>
+        </tr>
+        {% endfor %}
+
+    {% endif %}
+
     </tbody>
+
   </table>
   <!-- Mobile View -->
   <div class="sm:hidden space-y-4 mt-4">

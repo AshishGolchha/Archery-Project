@@ -10,7 +10,7 @@ from flask_mail import Mail, Message
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 from config import Config
-from models import db, User, StudentProfile, Competition, ScoreEntry
+from models import db, User, StudentProfile, Competition, ScoreEntry,Team
 from forms import CreateUserForm, StudentProfileForm, CompetitionSetupForm, PasswordResetRequestForm, PasswordResetForm, LoginForm
 
 ALLOWED_DISTANCES = {
@@ -355,6 +355,11 @@ def admin_competition_setup():
     
 
     if form.validate_on_submit():
+        if form.is_team_based.data:
+            if not form.num_teams.data or form.num_teams.data < 2:
+                flash('Please enter valid number of teams (minimum 2)', 'danger')
+                return render_template('admin_competition_setup.html', form=form)
+
         # 🔒 Distance restriction check
         if form.target_distance.data not in allowed:
             flash(
@@ -368,10 +373,22 @@ def admin_competition_setup():
             gender=form.gender.data,
             target_distance=form.target_distance.data,
             target_serial=form.target_serial.data,
-            num_students=form.num_students.data
+            num_students=form.num_students.data,
+            is_team_based=form.is_team_based.data   
         )
         db.session.add(comp)
         db.session.commit()
+        
+        # ✅ CREATE TEAMS IF TEAM BASED
+        if comp.is_team_based:
+            for i in range(1, form.num_teams.data + 1):
+                team = Team(
+                    name=f"Team {i}",
+                    competition_id=comp.id
+                )
+                db.session.add(team)
+
+            db.session.commit()
         # Redirect to add participants
         return redirect(url_for('admin_add_participants', comp_id=comp.id))
     current_user = get_current_user()
@@ -382,6 +399,7 @@ def admin_add_participants(comp_id):
     if not session.get('is_admin'):
         return redirect(url_for('login'))
     comp = Competition.query.get_or_404(comp_id)
+
     if request.method == 'POST':
         # Expect form fields roll_1..roll_n and gender_1..gender_n
         entries = []
@@ -389,6 +407,22 @@ def admin_add_participants(comp_id):
             roll = request.form.get(f'roll_{i}')
             gender = request.form.get(f'gender_{i}')
             user = None
+            team_id = request.form.get(f'team_{i}')
+            team = Team.query.get(team_id) if team_id else None
+
+            # 🔒 TEAM SELECTION VALIDATION (⭐ EXACT PLACE ⭐)
+            if comp.is_team_based and not team:
+                flash(
+                    f'Please select a team for participant #{i}',
+                    'danger'
+                )
+                return render_template(
+                    'admin_add_participants.html',
+                    comp=comp,
+                    teams=comp.teams
+                )
+
+
             if roll:
                 profile = StudentProfile.query.filter_by(roll_no=roll).first()
 
@@ -396,27 +430,15 @@ def admin_add_participants(comp_id):
                     flash(f'Roll {roll} not found', 'danger')
                     return render_template('admin_add_participants.html', comp=comp)
                 
-                # allowed = ALLOWED_DISTANCES.get(
-                #     profile.bow_type, {}
-                # ).get(profile.age_group, [])
-
-                # if comp.target_distance not in allowed:
-                #     flash(
-                #         f"Roll {roll}: {profile.bow_type} "
-                #         f"{profile.age_group} cannot play at "
-                #         f"{comp.target_distance}m",
-                #         'danger'
-                #     )
-                    return render_template('admin_add_participants.html', comp=comp)
                 user = profile.user
-            entries.append({'roll': roll, 'gender': gender, 'user': user})
+            entries.append({'roll': roll, 'gender': gender, 'user': user, 'team': team})
         # Create score entries rows with empty sets according to bow type
         
         for e in entries:
             # ✅ STEP 1: sets structure based on bow type
             if comp.bow_type == 'Indian':
                 sets = [
-                    {"round": i, "set1": 0, "set2": 0, "set3": 0, "xs": 0}
+                    {"round": i, "set1": 0, "set2": 0, "set3": 0, "xs": 0, "tens":0}
                     for i in range(1, 13)
                 ]
 
@@ -426,7 +448,7 @@ def admin_add_participants(comp_id):
                         "round": i,
                         "set1": 0, "set2": 0, "set3": 0,
                         "set4": 0, "set5": 0, "set6": 0,
-                        "xs": 0
+                        "xs": 0, "tens":0
                     }
                     for i in range(1, 7)
                 ]
@@ -435,6 +457,7 @@ def admin_add_participants(comp_id):
                 sets = []
             se = ScoreEntry(competition_id=comp.id,
                             user_id=e['user'].id if e['user'] else None,
+                            team_id=e['team'].id if comp.is_team_based and e['team'] else None,
                             roll_no=e['roll'],
                             target_distance=comp.target_distance,
                             target_serial=comp.target_serial,
@@ -445,7 +468,7 @@ def admin_add_participants(comp_id):
         db.session.commit()
         flash('Participants added and scoring sheet created', 'success')
         return redirect(url_for('admin_scores_view', comp_id=comp.id))
-    return render_template('admin_add_participants.html', comp=comp)
+    return render_template('admin_add_participants.html', comp=comp, teams=comp.teams)
 
 @app.route('/admin/student/<int:user_id>/edit', methods=['GET', 'POST'])
 def admin_edit_student_profile(user_id):
@@ -558,14 +581,31 @@ def admin_scores_view(comp_id):
     entries = comp.score_entries
     return render_template('admin_scores_view.html', comp=comp, entries=entries)
 
+from sqlalchemy import func
+
 @app.route('/admin/competition/<int:comp_id>/leaderboard')
 def admin_leaderboard(comp_id):
     if not session.get('is_admin'):
         return redirect(url_for('login'))
+
     comp = Competition.query.get_or_404(comp_id)
-    # sort by total desc, xs desc
-    entries = sorted(comp.score_entries, key=lambda e: ((e.total or 0), (e.xs or 0)), reverse=True)
+
+    # 🔥 TEAM BASED LEADERBOARD
+    if comp.is_team_based:
+        team_scores = (
+            db.session.query(
+                Team.id.label('team_id'),
+                Team.name.label('team_name'),
+                func.sum(ScoreEntry.total).label('total'),
+                func.sum(ScoreEntry.xs).label('xs')
+            ).join(ScoreEntry, ScoreEntry.team_id == Team.id).filter(ScoreEntry.competition_id == comp.id).group_by(Team.id).order_by(func.sum(ScoreEntry.total).desc(), func.sum(ScoreEntry.xs).desc()).all())
+
+        return render_template('admin_leaderboard.html', comp=comp, team_scores=team_scores)
+
+    # 🔹 INDIVIDUAL LEADERBOARD (OLD LOGIC)
+    entries = ScoreEntry.query.filter_by(competition_id=comp.id).order_by(ScoreEntry.total.desc(), ScoreEntry.xs.desc()).all()
     return render_template('admin_leaderboard.html', comp=comp, entries=entries)
+
 
 @app.route('/admin/students')
 def admin_students():
@@ -622,6 +662,24 @@ def admin_export_csv(comp_id):
     return Response(output, mimetype='text/csv',
                     headers={"Content-Disposition": f"attachment;filename=competition_{comp.id}_scores.csv"})
 
+@app.route('/admin/competition/<int:comp_id>/teams', methods=['GET','POST'])
+def admin_create_teams(comp_id):
+    if not session.get('is_admin'):
+        return redirect(url_for('login'))
+
+    comp = Competition.query.get_or_404(comp_id)
+
+    if request.method == 'POST':
+        names = request.form.getlist('team_name')
+        for n in names:
+            if n.strip():
+                db.session.add(Team(name=n.strip(), competition=comp))
+        db.session.commit()
+        return redirect(url_for('admin_add_participants', comp_id=comp.id))
+
+    return render_template('admin_create_teams.html', comp=comp)
+
+
 
 # ---------------- Student routes ----------------
 
@@ -676,6 +734,25 @@ def student_profile():
     
     form = StudentProfileForm()
     if form.validate_on_submit():
+
+        # 🔒 Aadhar format safety check (backend)
+        aadhar = form.aadhar_no.data.strip()
+        if not aadhar.isdigit() or len(aadhar) != 12 or aadhar.startswith('0'):
+            flash('Invalid Aadhar number. It must be 12 digits and cannot start with 0.', 'danger')
+            return render_template('student_profile_form.html', form=form, profile=current_user.profile)
+
+        # 🔒 RAA format validation
+        raa = form.raa_no.data.strip()
+        if not (raa.startswith('RAA') and len(raa) == 7 and raa[3:].isdigit()):
+            flash('Invalid RAA number. Format must be RAA followed by 4 digits (e.g. RAA0212).', 'danger')
+            return render_template('student_profile_form.html', form=form, profile=current_user.profile)
+        
+        # 🔒 AAI format validation
+        aai = form.aai_no.data.strip()
+        if not aai.isdigit() or len(aai) > 6:
+            flash('Invalid AAI number. It must be numeric and up to 6 digits.', 'danger')
+            return render_template('student_profile_form.html', form=form, profile=current_user.profile)
+
         # 🔒 Duplicate check (UNIQUE fields)
         existing = StudentProfile.query.filter(
             (StudentProfile.dob_cert_no == form.dob_cert_no.data) |
@@ -743,10 +820,21 @@ def student_profile():
         return redirect(url_for('student_dashboard'))
     return render_template('student_profile_form.html', form=form, profile=current_user.profile)
 
+def clamp_set_score(value):
+    try:
+        v = int(value)
+    except:
+        return 0
+    return max(0, min(10, v))
+
+
+
 @app.route('/competition/<int:comp_id>/score_entry/<int:entry_id>', methods=['GET','POST'])
 def score_entry(comp_id, entry_id):
     comp = Competition.query.get_or_404(comp_id)
     entry = ScoreEntry.query.get_or_404(entry_id)
+
+
     # admin can edit any score; student can view only their own entry
     current_user = get_current_user()
     if not current_user:
@@ -764,20 +852,47 @@ def score_entry(comp_id, entry_id):
         for i, r in enumerate(sets):
 
             # Common sets (Indian / Recurve / Compound)
-            r['set1'] = int(request.form.get(f'set1_{i}') or 0)
-            r['set2'] = int(request.form.get(f'set2_{i}') or 0)
-            r['set3'] = int(request.form.get(f'set3_{i}') or 0)
+            r['set1'] = clamp_set_score(request.form.get(f'set1_{i}'))
+            r['set2'] = clamp_set_score(request.form.get(f'set2_{i}'))
+            r['set3'] = clamp_set_score(request.form.get(f'set3_{i}'))
+
             # Extra sets only for Recurve & Compound
             if comp.bow_type in ['Re-curve', 'Compound']:
-                r['set4'] = int(request.form.get(f'set4_{i}') or 0)
-                r['set5'] = int(request.form.get(f'set5_{i}') or 0)
-                r['set6'] = int(request.form.get(f'set6_{i}') or 0)
+                r['set4'] = clamp_set_score(request.form.get(f'set4_{i}'))
+                r['set5'] = clamp_set_score(request.form.get(f'set5_{i}'))
+                r['set6'] = clamp_set_score(request.form.get(f'set6_{i}'))
 
             # X count
             r['xs'] = int(request.form.get(f'xs_{i}') or 0)
+            r['tens'] = int(request.form.get(f'tens_{i}') or 0)
 
             # 🔒 X count validation per round
             max_x = 3 if comp.bow_type == 'Indian' else 6
+            max_tens = max_x
+
+            if r['tens'] < 0 or r['tens'] > max_tens:
+                flash(
+                    f"Invalid X+10 count in round {r['round']}. "
+                    f"Allowed range: 0 to {max_tens}",
+                    'danger'
+                )
+                return redirect(url_for(
+                    'score_entry',
+                    comp_id=comp.id,
+                    entry_id=entry.id
+                ))
+
+            if r['xs'] > r['tens']:
+                flash(
+                    f"X count cannot be greater than X+10 in round {r['round']}",
+                    'danger'
+                )
+                return redirect(url_for(
+                    'score_entry',
+                    comp_id=comp.id,
+                    entry_id=entry.id
+                ))
+
 
             if r['xs'] < 0 or r['xs'] > max_x:
                 flash(
@@ -788,8 +903,36 @@ def score_entry(comp_id, entry_id):
                 return redirect(url_for('score_entry',
                                         comp_id=comp.id,
                                         entry_id=entry.id))
-
             
+            # 🔒 Round total validation (AFTER sets & X validation)
+            if comp.bow_type == 'Indian':
+                round_total = r['set1'] + r['set2'] + r['set3']
+                if round_total > 30:
+                    flash(
+                        f"Round {r['round']} total cannot exceed 30",
+                        'danger'
+                    )
+                    return redirect(url_for(
+                        'score_entry',
+                        comp_id=comp.id,
+                        entry_id=entry.id
+                    ))
+            else:
+                round_total = (
+                    r['set1'] + r['set2'] + r['set3'] +
+                    r['set4'] + r['set5'] + r['set6']
+                )
+                if round_total > 60:
+                    flash(
+                        f"Round {r['round']} total cannot exceed 60",
+                        'danger'
+                    )
+                    return redirect(url_for(
+                        'score_entry',
+                        comp_id=comp.id,
+                        entry_id=entry.id
+                    ))
+
 
         # Total auto calculate
         total = 0

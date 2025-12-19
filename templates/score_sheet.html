@@ -26,6 +26,7 @@
 
                 <th>Total</th>
                 <th>No. of X's</th>
+                <th>X+10</th>
             </tr>
             </thead>
 
@@ -38,7 +39,7 @@
                 <!-- Set 1–3 -->
                 <td>
                     {% if current_user.is_admin %}
-                        <input type="number" min="0" name="set1_{{ loop.index0 }}" value="{{ '' if r.set1 == 0 else r.set1 }}" class="p-2 border w-20">
+                        <input type="number" min="0" max="10" name="set1_{{ loop.index0 }}" value="{{ '' if r.set1 == 0 else r.set1 }}" class="p-2 border w-20">
                     {% else %}
                         {{ r.set1 }}
                     {% endif %}
@@ -46,7 +47,7 @@
 
                 <td>
                     {% if current_user.is_admin %}
-                        <input type="number" min="0" name="set2_{{ loop.index0 }}" value="{{ '' if r.set2 == 0 else r.set2 }}" class="p-2 border w-20">
+                        <input type="number" min="0" max="10" name="set2_{{ loop.index0 }}" value="{{ '' if r.set2 == 0 else r.set2 }}" class="p-2 border w-20">
                     {% else %}
                         {{ r.set2 }}
                     {% endif %}
@@ -54,7 +55,7 @@
 
                 <td>
                     {% if current_user.is_admin %}
-                        <input type="number" min="0" name="set3_{{ loop.index0 }}" value="{{ '' if r.set3 == 0 else r.set3 }}" class="p-2 border w-20">
+                        <input type="number" min="0" max="10" name="set3_{{ loop.index0 }}" value="{{ '' if r.set3 == 0 else r.set3 }}" class="p-2 border w-20">
                     {% else %}
                         {{ r.set3 }}
                     {% endif %}
@@ -64,7 +65,7 @@
                 {% if comp.bow_type in ['Recurve', 'Compound'] %}
                     <td>
                         {% if current_user.is_admin %}
-                            <input type="number" min="0" name="set4_{{ loop.index0 }}" value="{{ '' if r.set4 == 0 else r.set4 }}" class="p-2 border w-20">
+                            <input type="number" min="0" max="10" name="set4_{{ loop.index0 }}" value="{{ '' if r.set4 == 0 else r.set4 }}" class="p-2 border w-20">
                         {% else %}
                             {{ r.set4 }}
                         {% endif %}
@@ -72,7 +73,7 @@
 
                     <td>
                         {% if current_user.is_admin %}
-                            <input type="number" min="0" name="set5_{{ loop.index0 }}" value="{{ '' if r.set5 == 0 else r.set5 }}" class="p-2 border w-20">
+                            <input type="number" min="0" max="10" name="set5_{{ loop.index0 }}" value="{{ '' if r.set5 == 0 else r.set5 }}" class="p-2 border w-20">
                         {% else %}
                             {{ r.set5 }}
                         {% endif %}
@@ -80,7 +81,7 @@
 
                     <td>
                         {% if current_user.is_admin %}
-                            <input type="number" min="0" name="set6_{{ loop.index0 }}" value="{{ '' if r.set6 == 0 else r.set6 }}" class="p-2 border w-20">
+                            <input type="number" min="0" max="10" name="set6_{{ loop.index0 }}" value="{{ '' if r.set6 == 0 else r.set6 }}" class="p-2 border w-20">
                         {% else %}
                             {{ r.set6 }}
                         {% endif %}
@@ -116,6 +117,26 @@
                         {{ r.xs }}
                     {% endif %}
                 </td>
+                <td>
+                {% if current_user.is_admin %}
+                    {% if comp.bow_type == 'Indian' %}
+                        <input type="number"
+                            min="0" max="3"
+                            name="tens_{{ loop.index0 }}"
+                            value="{{ '' if r.tens == 0 else r.tens }}"
+                            class="p-2 border w-20">
+                    {% else %}
+                        <input type="number"
+                            min="0" max="6"
+                            name="tens_{{ loop.index0 }}"
+                            value="{{ '' if r.tens == 0 else r.tens }}"
+                            class="p-2 border w-20">
+                    {% endif %}
+                {% else %}
+                    {{ r.tens }}
+                {% endif %}
+                </td>
+
 
             </tr>
             {% endfor %}

@@ -64,8 +64,12 @@ class Competition(db.Model):
     target_serial = db.Column(db.String(20))
     num_students = db.Column(db.Integer)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    # Relationship to score entries
-    score_entries = db.relationship('ScoreEntry', back_populates='competition', passive_deletes=True)
+    # ✅ TEAM FEATURE
+    is_team_based = db.Column(db.Boolean, default=False)
+    
+    # Relationships
+    score_entries = db.relationship('ScoreEntry', back_populates='competition', cascade='all, delete-orphan')
+    teams = db.relationship('Team', back_populates='competition', cascade='all, delete-orphan')
 
 
 class ScoreEntry(db.Model):
@@ -85,6 +89,17 @@ class ScoreEntry(db.Model):
     xs = db.Column(db.Integer, default=0)
     total = db.Column(db.Integer, default=0)
 
+    team_id = db.Column(db.Integer, db.ForeignKey('teams.id', ondelete='SET NULL'), nullable=True)
+    team = db.relationship('Team', back_populates='entries')
 
     competition = db.relationship('Competition', back_populates='score_entries')
     user = db.relationship('User', back_populates='scores')
+
+class Team(db.Model):
+    __tablename__ = 'teams'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    competition_id = db.Column(db.Integer, db.ForeignKey('competitions.id', ondelete='CASCADE'), nullable=False)
+
+    competition = db.relationship('Competition', back_populates='teams')
+    entries = db.relationship('ScoreEntry', back_populates='team')

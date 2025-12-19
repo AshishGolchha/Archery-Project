@@ -9,12 +9,42 @@
         <div class="mb-3">{{ form.bow_type.label }}{{ form.bow_type(class_='w-full p-2 border rounded') }}</div>
         <div class="mb-3">{{ form.age_group.label }}{{ form.age_group(class_='w-full p-2 border rounded') }}</div>
         <div class="mb-3">{{ form.gender.label }}{{ form.gender(class_='w-full p-2 border rounded') }}</div>
+        <div class="mb-3 flex items-center gap-2">{{ form.is_team_based(id="is_team_based") }}{{ form.is_team_based.label }}</div>
+        <!-- 🔥 Number of Teams (HIDDEN INITIALLY) -->
+        <div id="teamFields" class="hidden">
+            <div class="mb-3">
+                {{ form.num_teams.label }}
+                {{ form.num_teams(class_='w-full p-2 border rounded') }}
+            </div>
+        </div>
+        <!-- 🔢 Number of Students (Always shown but moves down) -->
+        <div id="studentsField" class="mb-3">
+            {{ form.num_students.label }}
+            {{ form.num_students(class_='w-full p-2 border rounded') }}
+        </div>
         <div class="mb-3">{{ form.target_distance.label }}{{ form.target_distance(class_='w-full p-2 border rounded') }}</div>
         <div class="mb-3">{{ form.target_serial.label }}{{ form.target_serial(class_='w-full p-2 border rounded') }}</div>
-        <div class="mb-3">{{ form.num_students.label }}{{ form.num_students(class_='w-full p-2 border rounded') }}</div>
         <div>{{ form.submit(class_='bg-blue-600 text-white px-4 py-2 rounded') }}</div>
     </form>
 </div>
+<script>
+    const teamCheckbox = document.getElementById('is_team_based');
+    const teamFields = document.getElementById('teamFields');
+
+    function toggleTeamFields() {
+        if (teamCheckbox.checked) {
+            teamFields.classList.remove('hidden');
+        } else {
+            teamFields.classList.add('hidden');
+        }
+    }
+
+    // On load
+    toggleTeamFields();
+
+    // On change
+    teamCheckbox.addEventListener('change', toggleTeamFields);
+</script>
 <script>
 const ALLOWED_DISTANCES = {
     "Indian": {
